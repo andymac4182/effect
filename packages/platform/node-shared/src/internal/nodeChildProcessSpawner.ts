@@ -34,7 +34,8 @@ export interface SpawnedProcess {
 export type SpawnProcess = (
   command: string,
   args: ReadonlyArray<string>,
-  options: NodeChildProcess.SpawnOptions
+  options: NodeChildProcess.SpawnOptions,
+  duplexFds?: ReadonlySet<number>
 ) => SpawnedProcess
 
 export const buildSpawnOptions = (

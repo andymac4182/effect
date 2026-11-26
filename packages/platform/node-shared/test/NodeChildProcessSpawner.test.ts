@@ -365,6 +365,46 @@ ${proxyProcessSource}`
       assert.isAbove(denied.length, 0)
     }).pipe(Effect.provide(ProxyServices), Effect.scoped, Effect.timeout("5 seconds")))
 
+  it.live("reports a duplex write failure to a later reader when EOF arrives before Spawned", () =>
+    Effect.gen(function*() {
+      const fs = yield* FileSystem.FileSystem
+      const directory = yield* fs.makeTempDirectoryScoped()
+      const closed = join(directory, "closed")
+      // Hold `Spawned` until after the child closes fd3 so EOF arrives before
+      // the handle is set up.
+      const program = `const fs = process.getBuiltinModule("node:fs")
+const sendMessage = process.send.bind(process)
+process.send = (message, ...rest) => {
+  if (message._tag !== "Spawned") return sendMessage(message, ...rest)
+  const release = () => fs.existsSync(${JSON.stringify(closed)})
+    ? setTimeout(() => sendMessage(message, ...rest), 20)
+    : setTimeout(release, 10)
+  release()
+  return true
+}
+${proxyProcessSource}`
+
+      yield* Effect.gen(function*() {
+        const handle = yield* ChildProcess.make(
+          "sh",
+          ["-c", "exec 3>&-; : > \"$0\"; exec sleep 10", closed],
+          { additionalFds: { fd3: { type: "duplex" } } }
+        )
+        const writeError = yield* Effect.flip(
+          Stream.run(Stream.make(new TextEncoder().encode("request")), handle.getInputFd(3))
+        )
+        const readError = yield* Effect.flip(
+          Stream.runDrain(handle.getOutputFd(3)).pipe(Effect.timeout("2 seconds"))
+        )
+
+        assert.strictEqual(writeError._tag, "PlatformError")
+        assert.strictEqual(readError._tag, "PlatformError")
+      }).pipe(
+        Effect.scoped,
+        Effect.provide(proxyServices({ args: ["--input-type=module", "-e", program] }))
+      )
+    }).pipe(Effect.provide(NodeFileSystem.layer), Effect.scoped))
+
   it("fails a spawn whose exit is lost while its stdio sockets are pending", () => {
     const released: Array<number> = []
     const child = new ProxiedProcess({ ref() {}, unref() {}, release: (id) => released.push(id) }, 7, [true, true])

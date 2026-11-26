@@ -176,7 +176,19 @@ const taskkill = (
   )
 }
 
-const spawnDirect: SpawnProcess = (command, args, options) => NodeChildProcess.spawn(command, args, options)
+const spawnDirect: SpawnProcess = (command, args, options, duplexFds) => {
+  const child = NodeChildProcess.spawn(command, args, options)
+  if (duplexFds !== undefined) {
+    for (const fd of duplexFds) {
+      const stream = child.stdio[fd]
+      // Keep writing possible after the child closes its write side.
+      if (stream && "allowHalfOpen" in stream) {
+        stream.allowHalfOpen = true
+      }
+    }
+  }
+  return child
+}
 
 // Returns the function that launches a command. The proxy process layer waits
 // here, interruptibly, for a proxy process that is ready, since the launch
@@ -392,10 +404,6 @@ const makeWith = Effect.fnUntraced(function*(prepareSpawn: Effect.Effect<SpawnPr
           break
         }
         case "duplex": {
-          // Keep writing possible after the child closes its write side.
-          if (nodeStream && "allowHalfOpen" in nodeStream) {
-            nodeStream.allowHalfOpen = true
-          }
           setupOutput(fd, nodeStream, config.sink)
           yield* setupInput(fd, nodeStream, config.stream)
           break
@@ -485,7 +493,8 @@ const makeWith = Effect.fnUntraced(function*(prepareSpawn: Effect.Effect<SpawnPr
   const spawn = (
     spawnProcess: SpawnProcess,
     command: ChildProcess.StandardCommand,
-    spawnOptions: NodeChildProcess.SpawnOptions
+    spawnOptions: NodeChildProcess.SpawnOptions,
+    duplexFds?: ReadonlySet<number>
   ) =>
     Effect.callback<
       readonly [SpawnedProcess, ExitSignal],
@@ -495,7 +504,8 @@ const makeWith = Effect.fnUntraced(function*(prepareSpawn: Effect.Effect<SpawnPr
       const handle = spawnProcess(
         command.command,
         command.args.map(unwrap),
-        spawnOptions
+        spawnOptions,
+        duplexFds
       )
       handle.on("error", (error) => {
         // Node copies the arguments into `spawnargs`.
@@ -721,8 +731,15 @@ const makeWith = Effect.fnUntraced(function*(prepareSpawn: Effect.Effect<SpawnPr
         // settle a destroyed, backpressured stdin while the child is alive, and
         // a child may wait for stdin EOF before exiting.
         const inputScope = Scope.makeUnsafe()
+        let duplexFds: Set<number> | undefined
+        for (const { config, fd } of resolvedAdditionalFds) {
+          if (config.type === "duplex") {
+            duplexFds ??= new Set()
+            duplexFds.add(fd)
+          }
+        }
         const [childProcess, exitSignal] = yield* Effect.acquireRelease(
-          spawn(spawnProcess, cmd, buildSpawnOptions(cmd.options, { cwd, env, stdio }, process.platform)),
+          spawn(spawnProcess, cmd, buildSpawnOptions(cmd.options, { cwd, env, stdio }, process.platform), duplexFds),
           ([childProcess, exitSignal], exit) =>
             Effect.all([Scope.close(inputScope, exit), releaseProcess(childProcess, exitSignal)], {
               concurrency: "unbounded",
