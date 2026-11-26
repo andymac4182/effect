@@ -55,13 +55,13 @@ export class ProxiedProcess extends EventEmitter implements SpawnedProcess {
   private readonly proxy: ProxiedProcessOwner
   readonly id: number
   private readonly pipes: ReadonlyArray<boolean>
-  private readonly duplexFds: ReadonlySet<number> | undefined
+  private readonly duplexFds: ReadonlyArray<number>
 
   constructor(
     proxy: ProxiedProcessOwner,
     id: number,
     pipes: ReadonlyArray<boolean>,
-    duplexFds?: ReadonlySet<number>
+    duplexFds: ReadonlyArray<number> = []
   ) {
     super()
     this.proxy = proxy
@@ -113,7 +113,7 @@ export class ProxiedProcess extends EventEmitter implements SpawnedProcess {
 
   attach(fd: number, socket: Net.Socket): boolean {
     if (this.done || this.pipes[fd] !== true || this.stdio[fd] !== null) return false
-    if (this.duplexFds?.has(fd)) {
+    if (this.duplexFds.includes(fd)) {
       // Keep writing possible after the child closes its write side.
       socket.allowHalfOpen = true
     }
@@ -273,7 +273,7 @@ class Proxy implements ProxiedProcessOwner {
     command: string,
     args: ReadonlyArray<string>,
     options: NodeChildProcess.SpawnOptions,
-    duplexFds?: ReadonlySet<number>
+    duplexFds: ReadonlyArray<number>
   ): ProxiedProcess {
     if (!this.ready || this.exited || this.retired || this.credentials !== credentials()) {
       const refused = new ProxiedProcess(noOwner, 0, [])
@@ -547,7 +547,7 @@ export const make = (options: Options) => {
   return {
     prepareSpawn: Effect.map(
       ready,
-      (proxy): SpawnProcess => (command, args, options, duplexFds) => proxy.spawn(command, args, options, duplexFds)
+      (proxy): SpawnProcess => (...args) => proxy.spawn(...args)
     ),
     /** Waits for the first proxy process to be ready. */
     ready: Effect.suspend(() => Effect.mapError(Deferred.await(current.started), toError)),

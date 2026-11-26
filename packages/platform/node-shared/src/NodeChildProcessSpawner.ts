@@ -178,13 +178,11 @@ const taskkill = (
 
 const spawnDirect: SpawnProcess = (command, args, options, duplexFds) => {
   const child = NodeChildProcess.spawn(command, args, options)
-  if (duplexFds !== undefined) {
-    for (const fd of duplexFds) {
-      const stream = child.stdio[fd]
-      // Keep writing possible after the child closes its write side.
-      if (stream && "allowHalfOpen" in stream) {
-        stream.allowHalfOpen = true
-      }
+  for (const fd of duplexFds) {
+    const stream = child.stdio[fd]
+    // Keep writing possible after the child closes its write side.
+    if (stream && "allowHalfOpen" in stream) {
+      stream.allowHalfOpen = true
     }
   }
   return child
@@ -494,7 +492,7 @@ const makeWith = Effect.fnUntraced(function*(prepareSpawn: Effect.Effect<SpawnPr
     spawnProcess: SpawnProcess,
     command: ChildProcess.StandardCommand,
     spawnOptions: NodeChildProcess.SpawnOptions,
-    duplexFds?: ReadonlySet<number>
+    duplexFds: ReadonlyArray<number>
   ) =>
     Effect.callback<
       readonly [SpawnedProcess, ExitSignal],
@@ -731,13 +729,7 @@ const makeWith = Effect.fnUntraced(function*(prepareSpawn: Effect.Effect<SpawnPr
         // settle a destroyed, backpressured stdin while the child is alive, and
         // a child may wait for stdin EOF before exiting.
         const inputScope = Scope.makeUnsafe()
-        let duplexFds: Set<number> | undefined
-        for (const { config, fd } of resolvedAdditionalFds) {
-          if (config.type === "duplex") {
-            duplexFds ??= new Set()
-            duplexFds.add(fd)
-          }
-        }
+        const duplexFds = resolvedAdditionalFds.flatMap(({ config, fd }) => config.type === "duplex" ? [fd] : [])
         const [childProcess, exitSignal] = yield* Effect.acquireRelease(
           spawn(spawnProcess, cmd, buildSpawnOptions(cmd.options, { cwd, env, stdio }, process.platform), duplexFds),
           ([childProcess, exitSignal], exit) =>

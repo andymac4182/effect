@@ -30,12 +30,16 @@ export interface SpawnedProcess {
   removeListener(event: string, listener: (...args: Array<any>) => void): this
 }
 
-/** @internal */
+/**
+ * The streams of `duplexFds` must be half-open before they can observe EOF.
+ *
+ * @internal
+ */
 export type SpawnProcess = (
   command: string,
   args: ReadonlyArray<string>,
   options: NodeChildProcess.SpawnOptions,
-  duplexFds?: ReadonlySet<number>
+  duplexFds: ReadonlyArray<number>
 ) => SpawnedProcess
 
 export const buildSpawnOptions = (
