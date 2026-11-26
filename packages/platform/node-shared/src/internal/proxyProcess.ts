@@ -114,7 +114,6 @@ export class ProxiedProcess extends EventEmitter implements SpawnedProcess {
   attach(fd: number, socket: Net.Socket): boolean {
     if (this.done || this.pipes[fd] !== true || this.stdio[fd] !== null) return false
     if (this.duplexFds.includes(fd)) {
-      // Keep writing possible after the child closes its write side.
       socket.allowHalfOpen = true
     }
     this.stdio[fd] = socket

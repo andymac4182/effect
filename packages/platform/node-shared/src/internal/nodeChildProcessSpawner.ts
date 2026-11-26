@@ -31,7 +31,9 @@ export interface SpawnedProcess {
 }
 
 /**
- * The streams of `duplexFds` must be half-open before they can observe EOF.
+ * Streams of `duplexFds` must be half-open before they can observe EOF so
+ * closing the child's write side early keeps writes and write-error reporting
+ * working.
  *
  * @internal
  */

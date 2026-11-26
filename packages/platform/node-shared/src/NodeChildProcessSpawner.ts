@@ -180,7 +180,6 @@ const spawnDirect: SpawnProcess = (command, args, options, duplexFds) => {
   const child = NodeChildProcess.spawn(command, args, options)
   for (const fd of duplexFds) {
     const stream = child.stdio[fd]
-    // Keep writing possible after the child closes its write side.
     if (stream && "allowHalfOpen" in stream) {
       stream.allowHalfOpen = true
     }

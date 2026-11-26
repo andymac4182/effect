@@ -389,7 +389,6 @@ ${proxyProcessSource}`
         })
       )
 
-      // Hold `Spawned` until the parent socket has processed EOF on fd3
       const program = `const fs = process.getBuiltinModule("node:fs")
 const sendMessage = process.send.bind(process)
 process.send = (message, ...rest) => {
