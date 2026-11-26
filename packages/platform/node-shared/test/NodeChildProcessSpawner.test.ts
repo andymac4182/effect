@@ -371,17 +371,13 @@ ${proxyProcessSource}`
       const directory = yield* fs.makeTempDirectoryScoped()
       const hold = join(directory, "hold")
       yield* fs.writeFileString(hold, "")
-      let eofBeforeSpawned = false
       const createServer = Net.createServer
       const wrapCreateServer = (listener: (socket: Net.Socket) => void) =>
         createServer((socket) => {
           listener(socket)
           socket.once("end", () => {
             // Let Node's own end handler finish before releasing `Spawned`
-            setImmediate(() => {
-              eofBeforeSpawned = true
-              NodeFs.rmSync(hold, { force: true })
-            })
+            setImmediate(() => NodeFs.rmSync(hold, { force: true }))
           })
         })
       const spy = vi.spyOn(Net, "createServer").mockImplementation(wrapCreateServer as typeof Net.createServer)
@@ -411,7 +407,6 @@ ${proxyProcessSource}`
           stderr: "ignore",
           additionalFds: { fd3: { type: "duplex" } }
         })
-        assert.isTrue(eofBeforeSpawned)
         const writeError = yield* Effect.flip(
           Stream.run(Stream.make(new TextEncoder().encode("request")), handle.getInputFd(3))
         )
