@@ -1,5 +1,37 @@
 # effect
 
+## 4.1.7
+
+### Patch Changes
+
+- [#10972](https://github.com/Effect-TS/effect/pull/10972) [`ca1eb29`](https://github.com/Effect-TS/effect/commit/ca1eb2923db968f499fde4d7a2dfd8d67eff61f2) Thanks @effect-bot! - `ClusterCron` no longer retries a run that fails or dies, in either scheduling mode: the failure is logged and the next run is scheduled. With `calculateNextRunFromPrevious`, a failed run previously retried in place and blocked later runs; to retry typed failures, apply `Effect.retry` inside `execute` with your own stopping policy.
+
+- [#10939](https://github.com/Effect-TS/effect/pull/10939) [`9af7cbb`](https://github.com/Effect-TS/effect/commit/9af7cbb778431398bf8b6ba030f5b5b66fc5c09f) Thanks @RhysSullivan! - Compute `ConfigError.message` once during construction so `message` and `toString()` stay readable if `cause` is later replaced.
+
+- [#10936](https://github.com/Effect-TS/effect/pull/10936) [`35f29b6`](https://github.com/Effect-TS/effect/commit/35f29b6d5d2ae7a9ee3852c30f66f0bf4b4de2d3) Thanks @yuyongyan29-dev! - Fix `Cron.next` and `Cron.prev` to follow host DST transitions when no time zone is set.
+
+- [#10976](https://github.com/Effect-TS/effect/pull/10976) [`0b9f246`](https://github.com/Effect-TS/effect/commit/0b9f2466225d3ef9395feb86b3c339879394538f) Thanks @benschac! - The HTTP server no longer reports `Schema.SchemaError` and `Cause.NoSuchElementError` failures that it answers with `400` or `404` to `ErrorReporter`s.
+
+- [#10945](https://github.com/Effect-TS/effect/pull/10945) [`c37ce82`](https://github.com/Effect-TS/effect/commit/c37ce8261b99ba4ac4a9c8202105aec2629dbf5c) Thanks @RhysSullivan! - Add `McpClient.listToolsWithCacheHint` and `ListCacheHint` to return discovered tools alongside their aggregated `2026-07-28` cache hint (minimum `ttlMs`, `"public"` only when every page is `"public"`, or `undefined` when unavailable).
+
+- [#10944](https://github.com/Effect-TS/effect/pull/10944) [`abcf54c`](https://github.com/Effect-TS/effect/commit/abcf54c9c6ec805fad68f1ce31bda5a13231e17e) Thanks @RhysSullivan! - Support `2026-07-28` tool call input continuation in `McpClient` via `McpClientError.InputRequiredError`, `callTool` `inputResponses`/`requestState`, and `capabilities`.
+
+- [#10943](https://github.com/Effect-TS/effect/pull/10943) [`f487573`](https://github.com/Effect-TS/effect/commit/f4875733be6d15515b945acb94010ce16148a257) Thanks @RhysSullivan! - Support MCP protocol revisions `2025-03-26` and `2025-06-18` in `McpClient`.
+
+- [#10952](https://github.com/Effect-TS/effect/pull/10952) [`3795d20`](https://github.com/Effect-TS/effect/commit/3795d20d01183851f2141340f868f419b747c07e) Thanks @RhysSullivan! - Preserve `enum` and `enumNames` on enum properties in MCP `2025-06-18` elicitation requests.
+
+- [#10962](https://github.com/Effect-TS/effect/pull/10962) [`71235c0`](https://github.com/Effect-TS/effect/commit/71235c009c5f04b266f6a80e1d9d33aaa02340d9) Thanks @effect-bot! - Restrict `McpServer` request span target suffixes and attributes to registered tools, prompts, and static resources so unresolved or template-matched caller input is not recorded in telemetry.
+
+- [#10957](https://github.com/Effect-TS/effect/pull/10957) [`890be07`](https://github.com/Effect-TS/effect/commit/890be07816a0fd339a1dcd4e294fa04a1e65517c) Thanks @RhysSullivan! - Index `McpServer` tool registrations by name to avoid quadratic registration time for large toolkits.
+
+- [#10942](https://github.com/Effect-TS/effect/pull/10942) [`3dbbf0d`](https://github.com/Effect-TS/effect/commit/3dbbf0dc315a5c224690b7f84685f3aec752be83) Thanks @RhysSullivan! - Report toolkit handler `McpSchema.InvalidParams` failures as invalid input in `McpServer.registerToolkit`, matching `McpServer.addTool`.
+
+- [#10941](https://github.com/Effect-TS/effect/pull/10941) [`a5f5a12`](https://github.com/Effect-TS/effect/commit/a5f5a129aadf2c917416a178d8ec85b9dc6dc878) Thanks @RhysSullivan! - Return JSON-RPC error bodies for `McpServer.layerHttp` transport rejections (`403` disallowed `Origin`, `415` `Content-Type`, `406` `Accept`, `404` unknown `MCP-Session-Id`, and `400` refused batches), preserve session and version errors on batch requests, and list supported versions in unsupported-version errors.
+
+- [#10967](https://github.com/Effect-TS/effect/pull/10967) [`21ff5fc`](https://github.com/Effect-TS/effect/commit/21ff5fcaa0be39fdaf34b6cfefaa5ab2cf905d51) Thanks @gcanti! - Fix `Schema.toEncoded` so recursive schemas with renamed keys can generate arbitrary values and export JSON Schema.
+
+- [#10961](https://github.com/Effect-TS/effect/pull/10961) [`5031d70`](https://github.com/Effect-TS/effect/commit/5031d703101278affc84952689629b8a11587aaa) Thanks @effect-bot! - Add `Statement.SpanNameGenerator` context reference to override SQL statement span names while keeping database and server span attributes unchanged.
+
 ## 4.1.6
 
 ### Patch Changes
